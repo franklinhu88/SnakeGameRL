@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-from snake_env import SnakeEnv, Direction  # your RL environment
+from snake_env import SnakeEnv, Direction 
 
 class SnakeGameApp:
     def __init__(self):
@@ -53,7 +53,6 @@ class SnakeGameApp:
         env.reset()
 
         while True:
-            # Default: keep going straight
             action = 0
 
             for event in pygame.event.get():
@@ -63,18 +62,13 @@ class SnakeGameApp:
                     sys.exit()
 
                 if event.type == pygame.KEYDOWN:
-
-                    # Escape to return to menu
                     if event.key == pygame.K_ESCAPE:
                         return
 
-                    # Current direction (absolute)
                     d = env.direction
 
-                    # --- ABSOLUTE CONTROLS WITH NO 180° TURN ---
                     if event.key == pygame.K_UP:
-                        if d != Direction.DOWN:   # prevent reversal
-                            # compute relative action that sets direction to UP
+                        if d != Direction.DOWN: 
                             if d == Direction.LEFT:  action = 1
                             elif d == Direction.RIGHT: action = 2
                             else: action = 0
@@ -97,7 +91,6 @@ class SnakeGameApp:
                             elif d == Direction.DOWN: action = 2
                             else: action = 0
 
-            # Step with chosen action
             _, _, done, _ = env.step(action)
             env.render()
 
@@ -124,7 +117,7 @@ class SnakeGameApp:
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        return  # back to home screen
+                        return 
 
             if agent:
                 action = agent(state)
@@ -151,4 +144,4 @@ if __name__ == "__main__":
             app.run_human_mode()
 
         if choice == "agent":
-            app.run_agent_mode(agent=None)  # random agent for now
+            app.run_agent_mode(agent=None)  # random agent for now, when we train an agent, pass it here

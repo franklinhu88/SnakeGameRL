@@ -69,7 +69,7 @@ class SnakeEnv:
         self.reset()
 
     # ----------------------------
-    # Public API (Gym-like)
+    # Public API
     # ----------------------------
     def reset(self, seed=None):
         """Reset environment and return initial observation (tuple)."""
@@ -129,8 +129,9 @@ class SnakeEnv:
             # move by removing tail
             self.snake.pop()
 
-        # optional: cap episode length (avoid infinite wandering)
-        # if self.frame_iteration > 1000: done = True
+        # cap episode length (avoid infinite wandering)
+        if self.frame_iteration > 1000: 
+            done = True
 
         return self._get_state(), reward, done, {'score': self.score}
 
@@ -292,30 +293,3 @@ def state_tuple_to_int(state_tuple):
     for bit in state_tuple:
         idx = (idx << 1) | (1 if bit else 0)
     return idx
-
-# ----------------------------
-# Quick smoke test / example usage
-# ----------------------------
-if __name__ == "__main__":
-    # quick random-play demo (no learning)
-    env = SnakeEnv(width=200, height=200, block_size=20, render_mode=True, seed=42)
-    state = env.reset()
-    total_reward = 0
-    steps = 0
-
-    try:
-        while True:
-            # random action for demo
-            action = random.choice([0, 1, 2])
-            state, reward, done, info = env.step(action)
-            total_reward += reward
-            steps += 1
-            env.render()
-            if done:
-                print("Game Over. Score:", info['score'], "Steps:", steps, "Total reward:", total_reward)
-                env.reset()
-                total_reward = 0
-                steps = 0
-    except KeyboardInterrupt:
-        env.close()
-        print("Exiting demo.")
