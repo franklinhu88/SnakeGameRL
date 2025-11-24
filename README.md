@@ -9,3 +9,5 @@ pip install -r requirements.txt
 ```
 
 If you want to play the game, just run `python snake_app.py`
+
+Once the agent is trained, run `python q_learning.py --train --episodes 20000 --save q_table.npy` to train 20,000 episodes of the agent

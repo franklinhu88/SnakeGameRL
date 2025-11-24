@@ -1,7 +1,9 @@
+import os
 import pygame
 import sys
 import random
-from snake_env import SnakeEnv, Direction 
+import numpy as np
+from snake_env import SnakeEnv, Direction, state_tuple_to_int
 
 class SnakeGameApp:
     def __init__(self):
@@ -131,7 +133,6 @@ class SnakeGameApp:
                 pygame.time.wait(600)
                 state = env.reset()
 
-
 # --------------------------------------
 # MAIN APP LOOP
 # --------------------------------------
@@ -144,4 +145,13 @@ if __name__ == "__main__":
             app.run_human_mode()
 
         if choice == "agent":
-            app.run_agent_mode(agent=None)  # random agent for now, when we train an agent, pass it here
+            AGENT_AVAILABLE = os.path.exists("q_table.npy")
+            if not AGENT_AVAILABLE:
+                def q_agent(state):
+                    return None
+            else:
+                Q = np.load("q_table.npy")
+                def q_agent(state):
+                    idx = state_tuple_to_int(state)
+                    return int(np.argmax(Q[idx]))
+            app.run_agent_mode(agent=q_agent)
