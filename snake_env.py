@@ -11,9 +11,9 @@ Point = namedtuple('Point', ['x', 'y'])
 # Colors
 WHITE = (255, 255, 255)
 RED = (200, 0, 0)
-BLUE1 = (0, 0, 255)
-BLUE2 = (0, 100, 255)
 BLACK = (0, 0, 0)
+GREEN1 = (0, 200, 50)
+GREEN2 = (0, 255, 80)
 
 class Direction(Enum):
     RIGHT = 1
@@ -143,9 +143,9 @@ class SnakeEnv:
 
         # draw snake
         for pt in self.snake:
-            pygame.draw.rect(self.display, BLUE1, pygame.Rect(pt.x, pt.y, self.block_size, self.block_size))
+            pygame.draw.rect(self.display, GREEN1, pygame.Rect(pt.x, pt.y, self.block_size, self.block_size))
             inner = 4
-            pygame.draw.rect(self.display, BLUE2, pygame.Rect(pt.x+inner, pt.y+inner,
+            pygame.draw.rect(self.display, GREEN2, pygame.Rect(pt.x+inner, pt.y+inner,
                                                              self.block_size-2*inner, self.block_size-2*inner))
         # draw food
         pygame.draw.rect(self.display, RED, pygame.Rect(self.food.x, self.food.y, self.block_size, self.block_size))
@@ -155,7 +155,6 @@ class SnakeEnv:
         self.display.blit(text, [0, 0])
 
         pygame.display.flip()
-        self.clock.tick(self.speed)
 
     def close(self):
         if self.render_mode:

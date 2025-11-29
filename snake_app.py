@@ -20,6 +20,29 @@ class SnakeGameApp:
         rect = surface.get_rect(center=(self.W//2, y))
         self.display.blit(surface, rect)
 
+    def show_game_over(self, score):
+        """Display Game Over screen (human mode only)."""
+        while True:
+            self.display.fill((0, 0, 0))
+
+            self.draw_text("GAME OVER", 160, size=70)
+            self.draw_text(f"Score: {score}", 250, size=50)
+            self.draw_text("Press ENTER to play again", 350, size=30)
+            self.draw_text("Press ESC to return to menu", 400, size=25)
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        return "restart"
+                    if event.key == pygame.K_ESCAPE:
+                        return "menu"
+                    
     # -------------------------
     # HOME SCREEN MENU
     # -------------------------
@@ -95,10 +118,18 @@ class SnakeGameApp:
 
             _, _, done, _ = env.step(action)
             env.render()
+            env.clock.tick(10)
 
             if done:
-                pygame.time.wait(800)
+                pygame.time.wait(500)
+
+                choice = self.show_game_over(env.score)
+
+                if choice == "menu":
+                    return 
+
                 env.reset()
+                continue
 
     # -------------------------
     # AGENT PLAY MODE
@@ -110,6 +141,7 @@ class SnakeGameApp:
         """
         env = SnakeEnv(render_mode=True)
         state = env.reset()
+        agent_speed = 60
 
         while True:
             for event in pygame.event.get():
@@ -120,6 +152,18 @@ class SnakeGameApp:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         return 
+                    if event.key == pygame.K_MINUS or event.key == pygame.K_KP_MINUS:
+                        agent_speed = max(5, agent_speed - 10)
+                    if event.key == pygame.K_EQUALS or event.key == pygame.K_KP_PLUS:
+                        agent_speed = min(600, agent_speed + 10)
+                    if event.key == pygame.K_1:
+                        agent_speed = 10 
+                    if event.key == pygame.K_2:
+                        agent_speed = 60  
+                    if event.key == pygame.K_3:
+                        agent_speed = 150 
+                    if event.key == pygame.K_4:
+                        agent_speed = 400
 
             if agent:
                 action = agent(state)
@@ -128,10 +172,19 @@ class SnakeGameApp:
 
             state, _, done, _ = env.step(action)
             env.render()
+            env.clock.tick(agent_speed)
 
             if done:
-                pygame.time.wait(600)
+                pygame.time.wait(500)
+
+                choice = self.show_game_over(env.score)
+
+                if choice == "menu":
+                    return 
+
                 state = env.reset()
+                continue
+
 
 # --------------------------------------
 # MAIN APP LOOP
