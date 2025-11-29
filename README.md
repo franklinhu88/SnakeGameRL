@@ -20,9 +20,9 @@ When running the environment in render/demo mode, you can control how fast the a
 
 ## How to Change Agent Speed
 
-<- arrow : Slow down the gameplay (increase delay between steps)
--> arrow : Speed up the gameplay (decrease delay between steps)
-1 : Regular Play Speed
-2 : Above Normal Play Speed
-3 : Faster
-4 : Fastest
+- <- arrow : Slow down the gameplay (increase delay between steps)
+- -> arrow : Speed up the gameplay (decrease delay between steps)
+- 1 : Regular Play Speed
+- 2 : Above Normal Play Speed
+- 3 : Faster
+- 4 : Fastest
