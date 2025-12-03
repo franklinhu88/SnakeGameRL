@@ -130,7 +130,7 @@ class SnakeEnv:
             self.snake.pop()
 
         # cap episode length (avoid infinite wandering)
-        if self.frame_iteration > 1000: 
+        if self.frame_iteration > 5000: 
             done = True
 
         return self._get_state(), reward, done, {'score': self.score}
