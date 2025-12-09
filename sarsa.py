@@ -29,7 +29,7 @@ def train(
         np.random.seed(seed)
         random.seed(seed)
 
-    n_states = 2 ** 11  # 2048 states
+    n_states = 2 ** 11
     n_actions = 3
     Q = np.zeros((n_states, n_actions), dtype=np.float32)
 
@@ -40,7 +40,7 @@ def train(
         state = env.reset()
         s_idx = state_tuple_to_int(state)
 
-        # SARSA picks initial action via epsilon-greedy
+        # SARSA initial action
         action = epsilon_greedy_action(Q, s_idx, epsilon)
 
         total_reward = 0.0
@@ -49,10 +49,10 @@ def train(
             next_state, reward, done, info = env.step(action)
             s2_idx = state_tuple_to_int(next_state)
 
-            # Choose next action using epsilon-greedy (SARSA difference)
+            # SARSA chooses next action with epsilon-greedy
             next_action = epsilon_greedy_action(Q, s2_idx, epsilon)
 
-            # SARSA TD Target: reward + γ * Q(s', a')
+            # SARSA TD target
             td_target = reward + gamma * Q[s2_idx, next_action] * (0 if done else 1)
 
             # Update
@@ -62,7 +62,7 @@ def train(
             total_reward += reward
 
             s_idx = s2_idx
-            action = next_action  # SARSA carries the actual next action forward
+            action = next_action
 
             if done:
                 break
@@ -74,8 +74,17 @@ def train(
             avg_recent = np.mean(episode_rewards[-log_every:])
             print(f"SARSA Episode {ep}/{n_episodes} | avg_reward={avg_recent:.2f} | epsilon={epsilon:.4f}")
 
+    # ----------------------------
+    # SAVE Q-table
+    # ----------------------------
     np.save(save_path, Q)
-    print(f"SARSA training complete. Saved to {save_path}")
+    print(f"SARSA training complete. Saved table to {save_path}")
+
+    # ----------------------------
+    # SAVE TRAINING CURVE
+    # ----------------------------
+    np.save("sarsa_rewards.npy", episode_rewards)
+    print("Saved SARSA reward curve to sarsa_rewards.npy")
 
     return Q, episode_rewards
 
@@ -122,6 +131,7 @@ if __name__ == "__main__":
 
     if args.train:
         Q, rewards = train(train_env, n_episodes=args.episodes, save_path=args.save)
+        # (Already saved above, but keep this for safety)
         np.save("sarsa_rewards.npy", rewards)
 
     if args.eval:

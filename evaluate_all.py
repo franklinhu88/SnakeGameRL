@@ -12,54 +12,40 @@ from baselines import AGENT_BASELINES
 # ------------------------------
 # Utility: Create environment
 # ------------------------------
-def make_env(seed: int | None = 42) -> SnakeEnv:
-    """Environment for FAST evaluation (same size as Q-learning training)."""
-    env = SnakeEnv(
+def make_env(seed=42):
+    return SnakeEnv(
         width=200,
         height=200,
         block_size=20,
         render_mode=False,
         seed=seed
     )
-    return env
 
 
 # ------------------------------
-# Q-Learning agent wrapper
+# Agent wrappers
 # ------------------------------
-def q_learning_agent_factory(Q: np.ndarray):
+def q_learning_agent_factory(Q):
     def agent(state, env):
-        idx = state_tuple_to_int(state)
-        return int(np.argmax(Q[idx]))
+        return int(np.argmax(Q[state_tuple_to_int(state)]))
+    return agent
+
+
+def sarsa_agent_factory(Q):
+    def agent(state, env):
+        return int(np.argmax(Q[state_tuple_to_int(state)]))
     return agent
 
 
 # ------------------------------
-# SARSA agent wrapper
+# Core evaluation loop
 # ------------------------------
-def sarsa_agent_factory(Q: np.ndarray):
-    def agent(state, env):
-        idx = state_tuple_to_int(state)
-        return int(np.argmax(Q[idx]))  # greedy eval
-    return agent
-
-
-# ------------------------------
-# Core evaluation function
-# ------------------------------
-def evaluate_agent(
-    env: SnakeEnv,
-    agent_fn,
-    n_episodes: int = 50,
-    max_steps_per_episode: int = 1000
-) -> np.ndarray:
-
+def evaluate_agent(env, agent_fn, n_episodes=50, max_steps_per_episode=1000):
     scores = []
 
     for _ in range(n_episodes):
         state = env.reset()
-        done = False
-        steps = 0
+        done, steps = False, 0
         info = {}
 
         while not done and steps < max_steps_per_episode:
@@ -73,9 +59,9 @@ def evaluate_agent(
 
 
 # ------------------------------
-# Pretty results table
+# Results Table
 # ------------------------------
-def print_results_table(agent_scores: dict[str, np.ndarray]) -> None:
+def print_results_table(agent_scores):
     print("\nAgent Performance Summary:\n")
     header = "{:<15} {:>10} {:>10} {:>10}".format(
         "Agent", "Avg", "Max", "Std"
@@ -84,22 +70,18 @@ def print_results_table(agent_scores: dict[str, np.ndarray]) -> None:
     print("-" * len(header))
 
     for name, scores in agent_scores.items():
-        avg = float(scores.mean())
-        mx = float(scores.max())
-        std = float(scores.std())
-        line = "{:<15} {:>10.2f} {:>10.0f} {:>10.2f}".format(
-            name, avg, mx, std
-        )
-        print(line)
+        print("{:<15} {:>10.2f} {:>10.0f} {:>10.2f}".format(
+            name, scores.mean(), scores.max(), scores.std()
+        ))
 
 
 # ------------------------------
-# Visualization
+# Visualization Helpers
 # ------------------------------
-def plot_average_scores(agent_scores: dict[str, np.ndarray], out="agent_avg_scores.png"):
+def plot_average_scores(agent_scores, out="agent_avg_scores.png"):
     names = list(agent_scores.keys())
-    avgs = [float(v.mean()) for v in agent_scores.values()]
-    stds = [float(v.std()) for v in agent_scores.values()]
+    avgs = [v.mean() for v in agent_scores.values()]
+    stds = [v.std() for v in agent_scores.values()]
 
     plt.figure()
     x = np.arange(len(names))
@@ -110,39 +92,62 @@ def plot_average_scores(agent_scores: dict[str, np.ndarray], out="agent_avg_scor
     plt.tight_layout()
     plt.savefig(out)
     plt.close()
-    print(f"Saved {out}")
 
 
-def plot_score_boxplots(agent_scores: dict[str, np.ndarray], out="agent_score_boxplots.png"):
-    names = list(agent_scores.keys())
-    data = [v for v in agent_scores.values()]
-
+def plot_score_boxplots(agent_scores, out="agent_score_boxplots.png"):
     plt.figure()
-    plt.boxplot(data, labels=names, showmeans=True)
+    plt.boxplot(agent_scores.values(), labels=agent_scores.keys(), showmeans=True)
     plt.ylabel("Score")
     plt.title("Score Distribution per Agent")
     plt.tight_layout()
     plt.savefig(out)
     plt.close()
-    print(f"Saved {out}")
 
 
-def plot_training_rewards(rewards_path="q_rewards.npy", out="q_training_rewards.png"):
-    if not os.path.exists(rewards_path):
-        print(f"No {rewards_path}. Skipping training reward plot.")
+# ------------------------------
+# Training reward curve (generalized)
+# ------------------------------
+def plot_training_rewards(path, out, title):
+    if not os.path.exists(path):
+        print(f"Missing: {path}, skipping curve.")
         return
 
-    rewards = np.load(rewards_path)
+    rewards = np.load(path)
 
     plt.figure()
     plt.plot(rewards)
     plt.xlabel("Episode")
     plt.ylabel("Total Reward")
-    plt.title("Q-learning Training Reward Curve")
+    plt.title(title)
     plt.tight_layout()
     plt.savefig(out)
     plt.close()
+
     print(f"Saved {out}")
+
+
+# ------------------------------
+# Combined multi-line overlay curve
+# ------------------------------
+def plot_combined_training_curves(curve_dict, out="combined_training_curves.png"):
+    plt.figure()
+
+    for name, file in curve_dict.items():
+        if os.path.exists(file):
+            rewards = np.load(file)
+            plt.plot(rewards, label=name)
+        else:
+            print(f"Skipping missing curve: {file}")
+
+    plt.xlabel("Episode")
+    plt.ylabel("Total Reward")
+    plt.title("Training Reward Curves (Comparison)")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(out)
+    plt.close()
+
+    print(f"Saved combined training curves to {out}")
 
 
 # ------------------------------
@@ -150,12 +155,9 @@ def plot_training_rewards(rewards_path="q_rewards.npy", out="q_training_rewards.
 # ------------------------------
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--episodes", type=int, default=50,
-                        help="Episodes per agent for evaluation.")
-    parser.add_argument("--q_path", type=str, default="q_table.npy",
-                        help="Path to trained Q-learning table.")
-    parser.add_argument("--sarsa_path", type=str, default="sarsa_table.npy",
-                        help="Path to trained SARSA table (optional).")
+    parser.add_argument("--episodes", type=int, default=50)
+    parser.add_argument("--q_path", type=str, default="q_table.npy")
+    parser.add_argument("--sarsa_path", type=str, default="sarsa_table.npy")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -163,43 +165,52 @@ def main():
     np.random.seed(args.seed)
 
     env = make_env(seed=args.seed)
-
     agent_scores = {}
 
-    # ------------------------------
-    # 1. Baselines
-    # ------------------------------
+    # Baselines
     for name, agent_fn in AGENT_BASELINES.items():
         print(f"Evaluating baseline: {name} ...")
-        scores = evaluate_agent(env, agent_fn, n_episodes=args.episodes)
-        agent_scores[name] = scores
+        agent_scores[name] = evaluate_agent(env, agent_fn, args.episodes)
 
-    # ------------------------------
-    # 2. Q-learning agent
-    # ------------------------------
+    # Q-learning
     if os.path.exists(args.q_path):
         print("\nEvaluating Q-learning agent...")
         Q = np.load(args.q_path)
-        q_agent = q_learning_agent_factory(Q)
-        agent_scores["q_learning"] = evaluate_agent(env, q_agent, n_episodes=args.episodes)
-    else:
-        print("No Q-learning table found; skipping Q-learning evaluation.")
+        agent_scores["q_learning"] = evaluate_agent(env, q_learning_agent_factory(Q), args.episodes)
 
-    # ------------------------------
-    # 3. SARSA agent
-    # ------------------------------
+    # SARSA
     if os.path.exists(args.sarsa_path):
         print("\nEvaluating SARSA agent...")
         S = np.load(args.sarsa_path)
-        sarsa_agent = sarsa_agent_factory(S)
-        agent_scores["sarsa"] = evaluate_agent(env, sarsa_agent, n_episodes=args.episodes)
-    else:
-        print("No SARSA table found; skipping SARSA evaluation.")
+        agent_scores["sarsa"] = evaluate_agent(env, sarsa_agent_factory(S), args.episodes)
 
+    # Linear-Q
+    if os.path.exists("linear_q_weights.npy"):
+        print("\nEvaluating Linear-Q agent...")
+        W = np.load("linear_q_weights.npy")
+
+        def linear_q_agent(state, env):
+            x = np.array(state, dtype=np.float32)
+            return int(np.argmax(W @ x))
+
+        agent_scores["linear_q"] = evaluate_agent(env, linear_q_agent, args.episodes)
+
+    # Print table + plots
     print_results_table(agent_scores)
     plot_average_scores(agent_scores)
     plot_score_boxplots(agent_scores)
-    plot_training_rewards()
+
+    # Individual training curves
+    plot_training_rewards("q_rewards.npy", "q_training_rewards.png", "Q-learning Training Curve")
+    plot_training_rewards("sarsa_rewards.npy", "sarsa_training_rewards.png", "SARSA Training Curve")
+    plot_training_rewards("linear_q_rewards.npy", "linear_q_training_rewards.png", "Linear-Q Training Curve")
+
+    # Combined training curve overlay
+    plot_combined_training_curves({
+        "Q-learning": "q_rewards.npy",
+        "SARSA": "sarsa_rewards.npy",
+        "Linear-Q": "linear_q_rewards.npy"
+    })
 
 
 if __name__ == "__main__":
