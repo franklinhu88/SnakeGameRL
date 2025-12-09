@@ -292,3 +292,4 @@ def state_tuple_to_int(state_tuple):
     for bit in state_tuple:
         idx = (idx << 1) | (1 if bit else 0)
     return idx
+
